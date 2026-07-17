@@ -1,0 +1,135 @@
+MODULE 1 - Backend Foundation and PostgreSQL Setup
+
+Date: 17 July 2026
+
+1. Backend project preparation
+
+The work was completed only inside the backend folder. No files inside the
+frontend folder were changed.
+
+The backend was prepared as a Node.js application using Express.js. The main
+entry file is server.js, and the application can be started with the commands:
+
+    npm start       - starts the server normally
+    npm run dev     - starts the server with Nodemon for automatic restart
+
+2. Installed packages
+
+The following packages were installed for the backend:
+
+    express             - web server and API framework
+    prisma              - Prisma ORM command-line tools
+    @prisma/client      - Prisma database client used in application code
+    pg                  - PostgreSQL driver for Node.js
+    dotenv              - loads variables from the .env file
+    bcrypt              - password hashing package for future use
+    jsonwebtoken        - JWT package for future authentication
+    multer              - file upload middleware for future use
+    cors                - allows controlled cross-origin requests
+    helmet              - adds HTTP security headers
+    express-validator   - request validation package for future use
+    nodemon             - development-only automatic server restart tool
+
+Prisma and @prisma/client use version 6 because this version supports the
+standard DATABASE_URL configuration in prisma/schema.prisma.
+
+3. Created backend folder structure
+
+The following folders were created to support a clean MVC architecture:
+
+    config/        - shared configuration, including the Prisma client
+    controllers/   - future request handler functions
+    middlewares/   - future custom Express middleware
+    prisma/        - Prisma schema and future migrations
+    routes/        - future API route definitions
+    services/      - future business and database service functions
+    utils/         - future reusable helper functions
+    uploads/       - folder for future uploaded files
+
+4. Express server configuration
+
+server.js was configured to:
+
+    - load environment variables through dotenv
+    - create an Express application
+    - enable Helmet security headers
+    - enable CORS
+    - parse JSON request bodies with express.json()
+    - parse URL-encoded request bodies
+    - serve files in uploads/ at the /uploads URL path
+    - provide the GET / health-check route
+    - return a 404 JSON response for unknown routes
+    - include a global error-handler placeholder
+    - handle SIGINT and SIGTERM for graceful shutdown
+
+The GET / endpoint was tested successfully and returns:
+
+    { "success": true, "message": "Backend API Running" }
+
+5. Environment configuration
+
+The .env file was configured with:
+
+    PORT
+    DATABASE_URL
+    JWT_SECRET
+
+The database URL uses PostgreSQL format and targets the Ecom database on the
+local PostgreSQL server (localhost:5432). A .env.example file was also added
+with safe placeholder values so other developers know which variables are
+required without exposing real credentials.
+
+6. Git ignore rules
+
+The .gitignore file was expanded to prevent sensitive and generated files from
+being committed. It ignores:
+
+    - node_modules/
+    - all .env files, except .env.example
+    - uploaded files, except uploads/.gitkeep
+    - log files
+    - build, coverage, and cache folders
+    - common operating-system and editor files
+
+7. Prisma and PostgreSQL configuration
+
+prisma/schema.prisma was configured with:
+
+    - Prisma Client generator
+    - PostgreSQL datasource
+    - DATABASE_URL loaded from .env
+
+The Prisma Client was generated successfully with:
+
+    npx prisma generate
+
+A reusable Prisma Client was created in config/prisma.js. It exports one
+PrismaClient instance and reuses it during development, which prevents creating
+multiple unnecessary database connections during server reloads.
+
+8. Database connection at server startup
+
+server.js imports the reusable Prisma Client and calls prisma.$connect() before
+the Express server starts listening. The intended startup behavior is:
+
+    - successful connection: print "PostgreSQL connected successfully" and start
+      the API server
+    - failed connection: print the Prisma error, disconnect, and exit the app
+
+The connection was tested. PostgreSQL rejected the configured password for the
+postgres user with Prisma error P1000 (authentication failed). The server setup
+is working correctly; the DATABASE_URL password in .env needs to be changed to
+the actual PostgreSQL password before the server can connect.
+
+9. Next steps
+
+    1. Update DATABASE_URL in .env with the correct PostgreSQL password.
+    2. Run: npx prisma generate
+    3. Run: npm run dev
+    4. After creating the first Prisma model, run:
+       npx prisma migrate dev --name init
+    5. Then begin creating models, routes, controllers, services, and CRUD APIs.
+
+No authentication logic, database models, controllers, routes, or business
+logic has been created yet. The backend is now structured and ready for those
+next development modules.
