@@ -1,0 +1,141 @@
+Today's Work (20 July 2026)
+============================
+
+1. Set up the complete E-commerce backend project structure using Node.js, Express, and Prisma ORM.
+
+2. Integrated PostgreSQL as the database with Prisma ORM for type-safe database access.
+
+3. Created and configured the Prisma schema with 20 database tables/models covering the entire e-commerce domain.
+
+4. Set up the Express server with middleware (Helmet, CORS, JSON parsing, static file serving).
+
+5. Implemented graceful shutdown handling (SIGINT/SIGTERM) with proper Prisma connection lifecycle.
+
+6. Configured environment variables (.env) for PORT, DATABASE_URL, and JWT_SECRET.
+
+7. Resolved module installation issues (@prisma/client) and regenerated Prisma client.
+
+8. Created a singleton Prisma client instance in config/prisma.js to avoid connection leaks.
+
+================================================================================
+
+Total Database Tables Created: 20
+==================================
+
+  1. roles              - User role management (Admin, Customer, etc.)
+  2. users              - User accounts with authentication
+  3. user_addresses     - Multiple addresses per user (shipping/billing)
+  4. categories         - Product categories (hierarchical, self-referencing)
+  5. brands             - Product brands
+  6. products           - Main product catalog
+  7. product_images     - Multiple images per product
+  8. product_variants   - Product variations (size, color, price overrides)
+  9. inventory          - Stock tracking per variant
+  10. carts             - Shopping cart per user (one-to-one with User)
+  11. cart_items        - Items inside a cart
+  12. wishlists         - User wishlist items
+  13. coupons          - Discount coupons with usage limits
+  14. orders           - Customer orders with full pricing snapshots
+  15. order_items      - Line items within an order
+  16. payments         - Payment transactions per order (one-to-one)
+  17. reviews          - Product ratings and reviews by users
+  18. banners          - Promotional banners with scheduling
+  19. notifications    - User notification system
+  20. settings         - Application-wide key-value settings
+
+================================================================================
+
+How Prisma Works with Database Connections
+==========================================
+
+1. PRISMA CLIENT INSTANTIATION (config/prisma.js)
+
+   The PrismaClient is instantiated as a singleton pattern:
+
+     const { PrismaClient } = require('@prisma/client');
+     const prisma = new PrismaClient({ errorFormat: '...' });
+
+   - In development, the instance is cached on the global object (global.prisma)
+     to prevent multiple instances during hot-reloading with nodemon.
+   - In production, a fresh instance is created and not cached globally.
+   - This prevents exhausting database connections from creating new
+     PrismaClient instances on every module reload.
+
+2. CONNECTION LIFECYCLE
+
+   a) Connection Pool
+      - Prisma uses a connection pool (default: 10 connections for PostgreSQL).
+      - When you call prisma.$connect(), it initializes the pool but does NOT
+        immediately open all connections — connections are lazily created as
+        queries arrive.
+      - The pool is managed internally by the Prisma query engine.
+
+   b) Connection on Startup (server.js:44-57)
+
+        await prisma.$connect();
+        console.log('PostgreSQL connected successfully');
+        server = app.listen(port, ...);
+
+      - $connect() validates that the database is reachable using DATABASE_URL.
+      - If it fails, the server exits gracefully after disconnecting.
+      - Once connected, subsequent queries reuse pooled connections.
+
+   c) Graceful Shutdown (server.js:59-76)
+
+        const shutdown = async (signal) => {
+          if (server) { server.close(async () => { await prisma.$disconnect(); }); }
+        };
+        process.on('SIGINT', () => shutdown('SIGINT'));
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+      - On SIGINT (Ctrl+C) or SIGTERM (process kill), the HTTP server stops
+        accepting new requests first, then prisma.$disconnect() closes all
+        pool connections cleanly.
+      - This prevents hanging connections and ensures data integrity.
+
+3. DATASOURCE CONFIGURATION (schema.prisma)
+
+     datasource db {
+       provider = "postgresql"
+       url      = env("DATABASE_URL")
+     }
+
+   - provider: Specifies PostgreSQL as the database dialect.
+   - url: Reads from DATABASE_URL environment variable (set in .env).
+   - The URL format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+
+4. CONNECTION STRING USED
+
+     DATABASE_URL="postgresql://postgres:pranav123@localhost:5432/Ecom"
+
+   - postgresql://postgres:pranav123@localhost:5432/Ecom
+   - user: postgres, password: pranav123, host: localhost, port: 5432, db: Ecom
+
+5. HOW QUERIES USE THE CONNECTION
+
+   - Every time you call a Prisma Client method like:
+       prisma.user.findMany()
+       prisma.product.create({ data: {...} })
+       prisma.order.findUnique({ where: { id } })
+   - The Prisma Client internally:
+     a) Serializes the query into SQL via the Prisma query engine.
+     b) Acquires a connection from the pool.
+     c) Executes the SQL against PostgreSQL.
+     d) Returns the connection to the pool.
+     e) Maps the result back to JavaScript objects with correct types.
+
+6. CONNECTION POOL SETTINGS (Default for PostgreSQL)
+
+   - Pool size: 10 connections (configurable via DATABASE_URL params).
+   - Connection timeout: 30 seconds (default).
+   - Idle timeout: Connections are kept alive and reused; idle connections
+     are eventually cleaned up by PostgreSQL.
+   - To customize: DATABASE_URL="postgresql://.../?connection_limit=5"
+
+7. BEST PRACTICES OBSERVED IN THIS PROJECT
+
+   - Singleton PrismaClient (avoids connection leaks on hot reload).
+   - Explicit $connect() on startup to fail fast if DB is unreachable.
+   - Explicit $disconnect() on shutdown to release connections.
+   - Using global object caching in development for nodemon compatibility.
+   - Prisma error format is set to 'pretty' in development for better debugging.

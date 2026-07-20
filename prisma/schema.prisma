@@ -7,61 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  RETURNED
-  REFUNDED
-}
-
-enum PaymentStatus {
-  PENDING
-  AUTHORIZED
-  PAID
-  FAILED
-  CANCELLED
-  REFUNDED
-  PARTIALLY_REFUNDED
-}
-
-enum PaymentMethod {
-  CARD
-  UPI
-  NET_BANKING
-  WALLET
-  CASH_ON_DELIVERY
-  BANK_TRANSFER
-}
-
-enum CouponType {
-  PERCENTAGE
-  FIXED_AMOUNT
-}
-
-enum BannerStatus {
-  DRAFT
-  ACTIVE
-  INACTIVE
-  EXPIRED
-}
-
-enum NotificationType {
-  ORDER
-  PAYMENT
-  PROMOTION
-  ACCOUNT
-  SYSTEM
-}
+enum UserStatus { ACTIVE INACTIVE SUSPENDED }
+enum OrderStatus { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED CANCELLED RETURNED REFUNDED }
+enum PaymentStatus { PENDING AUTHORIZED PAID FAILED CANCELLED REFUNDED PARTIALLY_REFUNDED }
+enum PaymentMethod { CARD UPI NET_BANKING WALLET CASH_ON_DELIVERY BANK_TRANSFER }
+enum CouponType { PERCENTAGE FIXED_AMOUNT }
+enum BannerStatus { DRAFT ACTIVE INACTIVE EXPIRED }
+enum NotificationType { ORDER PAYMENT PROMOTION ACCOUNT SYSTEM }
 
 model Role {
   id String @id @default(uuid()) @db.Uuid
